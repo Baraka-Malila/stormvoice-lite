@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+*.log
+
+# Data (raw recordings, potentially personal) — don't commit
+data/recordings/
+data/features/
+data/models/
+*.wav
+*.mp3
+*.flac
+
+# But allow tiny sample files inside a /samples/ subdir for demo
+!data/samples/*.wav
+
+# Model checkpoints
+*.pt
+*.pth
+*.pkl
+*.joblib
+
+# Notebooks scratch
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Env
+.env
