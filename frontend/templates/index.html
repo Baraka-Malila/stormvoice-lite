@@ -1,2 +1,179 @@
-<!doctype html><html><head><title>stormVoice Lite</title></head>
-<body><h1>placeholder — Task 7 replaces this</h1></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>stormVoice Lite</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    body { overflow: auto; user-select: auto; font-size: 13px; }
+    #app { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+    header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.8rem;
+             border-bottom: 1px solid #222; padding-bottom: 1rem; }
+    header img { height: 36px; opacity: 0.85; }
+    header h1 { font-size: 1rem; letter-spacing: 0.12em; color: var(--fg-dim); font-weight: 400; }
+
+    .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 1px solid #222; }
+    .tab-btn { background: none; border: none; border-bottom: 2px solid transparent;
+               color: var(--fg-dim); font-family: var(--font); font-size: 0.85rem;
+               letter-spacing: 0.1em; padding: 0.5rem 1.2rem; cursor: pointer;
+               transition: var(--transition); }
+    .tab-btn.active { color: var(--fg); border-bottom-color: #4af; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .record-btn { display: inline-flex; align-items: center; gap: 0.5rem;
+                  padding: 0.7rem 1.6rem; border-radius: 999px; border: none; cursor: pointer;
+                  background: #c22; color: #fff; font-family: var(--font);
+                  font-size: 0.85rem; letter-spacing: 0.08em; transition: var(--transition); }
+    .record-btn.recording { background: #333; border: 1px solid #555; }
+    .record-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+    .record-btn.recording .dot { animation: blink 0.8s ease-in-out infinite; }
+
+    .panel { background: #0a0a0a; border: 1px solid #1e1e1e; border-radius: var(--radius);
+             padding: 1.2rem; margin-bottom: 1rem; }
+    .panel-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .panel-row img { width: 100%; border-radius: 6px; background: #111; min-height: 80px; }
+
+    .result-grid { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem;
+                   align-items: baseline; }
+    .result-label { color: var(--fg-dim); font-size: 0.75rem; letter-spacing: 0.08em;
+                    text-transform: uppercase; }
+    .result-value { color: var(--fg); }
+    .result-value.speaker-name { font-size: 1.4rem; letter-spacing: 0.04em; }
+    .result-value.confidence { font-size: 0.85rem; color: var(--fg-dim); }
+
+    .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 4px;
+             font-size: 0.75rem; letter-spacing: 0.06em; font-weight: 600; }
+    .badge-low      { background: #1a3a1a; color: #4c4; }
+    .badge-medium   { background: #3a2a00; color: #fa0; }
+    .badge-high     { background: #3a1a00; color: #f84; }
+    .badge-critical { background: #3a0000; color: #f44; }
+
+    .signal-tag { display: inline-block; background: #1a1a2a; border: 1px solid #2a2a4a;
+                  color: #88f; border-radius: 4px; padding: 0.1rem 0.4rem;
+                  font-size: 0.72rem; margin: 0.15rem; }
+
+    .enroll-form { display: flex; flex-direction: column; gap: 0.8rem; }
+    .enroll-form input[type=text] { background: #111; border: 1px solid #2a2a2a; border-radius: 6px;
+                                     color: var(--fg); font-family: var(--font);
+                                     padding: 0.5rem 0.8rem; font-size: 0.9rem; width: 240px; }
+    .clips-list { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.3rem; }
+    .clip-item { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 4px;
+                 padding: 0.2rem 0.5rem; font-size: 0.75rem; color: var(--fg-dim); }
+    .submit-btn { padding: 0.5rem 1.2rem; background: #1a3a5a; border: 1px solid #2a5a8a;
+                  color: #4af; border-radius: 6px; cursor: pointer; font-family: var(--font);
+                  font-size: 0.82rem; letter-spacing: 0.06em; }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .history-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .history-table th { text-align: left; color: var(--fg-dim); font-weight: 400;
+                        letter-spacing: 0.08em; padding: 0.4rem 0.6rem;
+                        border-bottom: 1px solid #1e1e1e; }
+    .history-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #0f0f0f;
+                        vertical-align: top; }
+    .history-table tr:hover td { background: #0d0d0d; }
+    .transcript-cell { max-width: 280px; overflow: hidden; text-overflow: ellipsis;
+                       white-space: nowrap; color: var(--fg-dim); }
+
+    .status { font-size: 0.78rem; color: var(--fg-dim); letter-spacing: 0.06em; }
+    .status.error { color: #f55; }
+    .action-text { font-size: 0.85rem; color: #8f8; border-left: 2px solid #4a4;
+                   padding-left: 0.5rem; margin-top: 0.3rem; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <img src="/static/fulcrum-transparent-bg.svg" alt="logo" />
+    <h1>stormVoice Lite &mdash; Speaker ID &amp; Fraud Detection</h1>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="analyze">Analyze</button>
+    <button class="tab-btn" data-tab="enroll">Enroll Speaker</button>
+    <button class="tab-btn" data-tab="history">History</button>
+  </div>
+
+  <!-- ANALYZE TAB -->
+  <div id="tab-analyze" class="tab-panel active">
+    <div class="panel" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <button id="analyze-btn" class="record-btn"><span class="dot"></span>Record &amp; Analyze</button>
+      <span id="analyze-status" class="status"></span>
+    </div>
+
+    <div class="panel-row" id="viz-row" style="display:none">
+      <img id="waveform-img" alt="waveform" />
+      <img id="spectrogram-img" alt="spectrogram" />
+    </div>
+
+    <div class="panel" id="result-panel" style="display:none">
+      <div class="result-grid">
+        <span class="result-label">Speaker</span>
+        <span class="result-value speaker-name" id="r-speaker">—</span>
+
+        <span class="result-label">Confidence</span>
+        <span class="result-value confidence" id="r-confidence">—</span>
+
+        <span class="result-label">Transcript</span>
+        <span class="result-value" id="r-transcript" style="font-style:italic;color:var(--fg-dim)">—</span>
+
+        <span class="result-label">Risk</span>
+        <span class="result-value" id="r-risk">—</span>
+
+        <span class="result-label">Category</span>
+        <span class="result-value" id="r-category">—</span>
+
+        <span class="result-label">Signals</span>
+        <span class="result-value" id="r-signals">—</span>
+
+        <span class="result-label">Action</span>
+        <div class="action-text" id="r-action">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENROLL TAB -->
+  <div id="tab-enroll" class="tab-panel">
+    <div class="panel">
+      <div class="enroll-form">
+        <div>
+          <label style="color:var(--fg-dim);font-size:0.8rem;letter-spacing:0.08em">SPEAKER NAME</label><br/>
+          <input type="text" id="enroll-name" placeholder="e.g. baraka" />
+        </div>
+        <div>
+          <label style="color:var(--fg-dim);font-size:0.8rem;letter-spacing:0.08em">CLIPS (record 1–3)</label>
+          <div class="clips-list" id="clips-list"></div>
+        </div>
+        <div style="display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap">
+          <button id="enroll-record-btn" class="record-btn"><span class="dot"></span>Record Clip</button>
+          <button id="enroll-submit-btn" class="submit-btn" disabled>Enroll Speaker</button>
+          <span id="enroll-status" class="status"></span>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="color:var(--fg-dim);font-size:0.8rem;letter-spacing:0.08em;margin-bottom:0.6rem">ENROLLED SPEAKERS</div>
+      <div id="speakers-list" style="color:var(--fg-dim);font-size:0.85rem">loading…</div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="tab-panel">
+    <div class="panel">
+      <div style="color:var(--fg-dim);font-size:0.8rem;letter-spacing:0.08em;margin-bottom:0.8rem">RECENT SESSIONS</div>
+      <table class="history-table">
+        <thead><tr>
+          <th>Speaker</th><th>Risk</th><th>Category</th><th>Transcript</th><th>Time</th>
+        </tr></thead>
+        <tbody id="history-body">
+          <tr><td colspan="5" style="color:var(--fg-dim)">loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
