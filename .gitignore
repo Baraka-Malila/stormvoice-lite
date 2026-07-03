@@ -36,3 +36,17 @@ Thumbs.db
 
 # Env
 .env
+venv/
+
+# Speaker-ID Phase 1 outputs (regenerable)
+data/clips/
+models/artifacts/
+docs/figures/*.png
+docs/figures/*.jpg
+
+# Test caches
+.pytest_cache/
+
+# stormVoice Lite
+stormvoice.db
+data/samples/
