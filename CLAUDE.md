@@ -40,8 +40,8 @@ The academic framing is **classical pattern recognition**, not full ASR. We turn
 | Audio I/O | `sounddevice` (record), `soundfile` (read/write) | Simple, cross-platform |
 | Feature extraction | `librosa` | MFCC + mel-spectrogram in 5 lines each |
 | Classical model | `scikit-learn` (SVM, RandomForest, KNN) | Fast train, easy interpretation |
-| Neural model | PyTorch — small CNN | Same stack Baraka uses in bongoSTEM |
-| Frontend | FastAPI + vanilla JS + CSS | Fork the UI shell from bongoSTEM (logo, layout) |
+| Neural model | PyTorch — small CNN | Same stack Baraka uses in stormVoice |
+| Frontend | FastAPI + vanilla JS + CSS | Fork the UI shell from stormVoice (logo, layout) |
 | Charting | matplotlib for PPT, Plotly.js for live demo | Confusion matrices, waveform, spectrogram |
 
 **Deps (rough):**
@@ -104,7 +104,7 @@ speaker_id/
 
 ## Coding Rules
 
-- 300-line file limit (same as bongoSTEM discipline)
+- 300-line file limit (same as stormVoice discipline)
 - One responsibility per file — features/mfcc.py extracts MFCC, nothing else
 - Comments explain WHY, not WHAT
 - Trust internal function calls, validate only at boundaries (CLI args, uploaded audio files)
@@ -112,11 +112,11 @@ speaker_id/
 
 ---
 
-## Relationship to bongoSTEM
+## Relationship to stormVoice
 
-Baraka's parallel project. This assignment reuses UI polish from bongoSTEM (logo, CSS shell) but is otherwise independent. Do NOT modify anything under `~/bongoSTEM/` from this project.
+Baraka's parallel project. This assignment reuses UI polish from stormVoice (logo, CSS shell) but is otherwise independent. Do NOT modify anything under `~/stormVoice/` from this project.
 
-The trained speaker-ID model has natural future integrations into bongoSTEM:
+The trained speaker-ID model has natural future integrations into stormVoice:
 - **Biometric identity gate** — verify it's Baraka speaking before unlocking private memories
 - **Multi-user awareness** — if a friend joins, Bongo knows who is who
 - **Swahili STT training data pipeline** — the recording capture code here feeds directly into the planned Swahili whisper fine-tune
@@ -133,7 +133,7 @@ The trained speaker-ID model has natural future integrations into bongoSTEM:
 6. Results — confusion matrix, per-class F1, comparison
 7. Live demo
 8. Failure cases + limitations (mic distance, background noise, similar voices)
-9. Future work (this is where you can mention bongoSTEM integrations)
+9. Future work (this is where you can mention stormVoice integrations)
 
 ---
 

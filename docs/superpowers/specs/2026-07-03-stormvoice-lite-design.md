@@ -26,7 +26,7 @@ Output per analysis: speaker name, confidence, transcript, detected signals, fra
 | STT | faster-whisper (tiny/base model) | Local, offline |
 | Fraud engine | Rule-based keyword scoring | Explainable; from PDF section 10 |
 | Database | SQLite + SQLAlchemy | Zero-setup; swap to Postgres with one env var change |
-| Frontend | Vanilla JS + bongoSTEM CSS fork | Tweaks to bongoSTEM shell as needed |
+| Frontend | Vanilla JS + stormVoice CSS fork | Tweaks to stormVoice shell as needed |
 
 ---
 
@@ -94,7 +94,7 @@ Risk levels: 0–20 Low, 21–50 Medium, 51–80 High, 81+ Critical.
 3. **Bottom panel:** Results dashboard — speaker name + confidence, transcript, detected signals, fraud category, risk badge, recommended action
 4. **Sidebar/tab:** Session history list
 
-bongoSTEM CSS shell forked in; tweaks to layout for the dashboard panels.
+stormVoice CSS shell forked in; tweaks to layout for the dashboard panels.
 
 ---
 
@@ -116,7 +116,7 @@ speech-recognition/
 │   └── serve.py           # FastAPI app (replaces old serve.py)
 └── frontend/
     ├── static/
-    │   ├── css/            # forked from bongoSTEM
+    │   ├── css/            # forked from stormVoice
     │   ├── js/app.js       # vanilla JS
     │   └── *.svg
     └── templates/

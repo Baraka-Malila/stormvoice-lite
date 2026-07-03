@@ -17,7 +17,7 @@ Constraints shaping the design:
 - **4-person group, but only Baraka's voice is available today.** Teammates have not delivered recordings and there is no timeline yet. The design must let the entire pipeline (features, both models, evaluation, live demo) run end-to-end using **placeholder audio** so development does not stall. Placeholder swaps out for real teammate data when it arrives, with zero code changes.
 - **Teammates will record on their phones** (voice memo / WhatsApp voice note) and send the files. Baraka records on his phone too — same collection method for everyone to prevent the model from learning "phone vs laptop mic" instead of voices.
 - **Notebooks are the primary workflow** for exploration, feature study, training, and evaluation. Rationale: each cell maps to a specific pedagogical step, and the notebooks double as slide source material. The 300-line file rule from `CLAUDE.md` is relaxed for notebooks; it still applies to `.py` files.
-- **Reused shell:** the frontend forks the bongoSTEM static assets (logo, CSS, layout structure). No code in `~/bongoSTEM/` is modified.
+- **Reused shell:** the frontend forks the stormVoice static assets (logo, CSS, layout structure). No code in `~/stormVoice/` is modified.
 
 ## 2. Data path
 
@@ -159,7 +159,7 @@ Cheap, credible slide content:
 
 ## 6. Serving (live demo)
 
-Minimal FastAPI app; frontend forks the bongoSTEM shell for visual identity but exposes one page.
+Minimal FastAPI app; frontend forks the stormVoice shell for visual identity but exposes one page.
 
 ### 6.1 Backend — `scripts/serve.py`
 
@@ -188,7 +188,7 @@ Longer-than-3-s input: take the middle 3 s. Shorter: zero-pad. No silence trimmi
 
 ### 6.2 Frontend — `frontend/static/` + `frontend/templates/index.html`
 
-Forked from `~/bongoSTEM/bongo/frontend/static/`: copy `css/`, logo SVGs, and the base layout structure from `index.html`. Strip bongoSTEM-specific features (chess, calendar, sessions).
+Forked from `~/stormVoice/bongo/frontend/static/`: copy `css/`, logo SVGs, and the base layout structure from `index.html`. Strip stormVoice-specific features (chess, calendar, sessions).
 
 Single page, three panels:
 
@@ -234,7 +234,7 @@ speech-recognition/
 ├── scripts/
 │   └── serve.py                   # FastAPI demo
 ├── frontend/
-│   ├── static/                    # forked from bongoSTEM
+│   ├── static/                    # forked from stormVoice
 │   └── templates/
 │       └── index.html
 ├── docs/

@@ -57,7 +57,7 @@ uvicorn scripts.serve:app --reload
 | STT | faster-whisper base.en |
 | Fraud | Rule-based keyword scoring |
 | Backend | FastAPI + SQLite/SQLAlchemy |
-| Frontend | Vanilla JS, bongoSTEM CSS shell |
+| Frontend | Vanilla JS — dark CSS shell |
 
 ## Tests
 

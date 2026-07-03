@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build stormVoice Lite end-to-end — speaker enrollment + identification (MFCC nearest-centroid), faster-whisper STT, rule-based fraud engine, SQLite session history, FastAPI backend, vanilla JS dashboard forked from bongoSTEM.
+**Goal:** Build stormVoice Lite end-to-end — speaker enrollment + identification (MFCC nearest-centroid), faster-whisper STT, rule-based fraud engine, SQLite session history, FastAPI backend, vanilla JS dashboard forked from stormVoice.
 
 **Architecture:** Seven Jupyter-free Python modules handle distinct concerns (features, DB, speaker ID, fraud, STT, server). FastAPI wires them together and serves the vanilla JS single-page frontend. SQLite + SQLAlchemy stores speakers, embeddings, sessions, and fraud signals. The entire stack runs with `uvicorn scripts.serve:app --reload` after installing deps.
 
@@ -14,7 +14,7 @@
 - **300-line limit** on `.py` files (from CLAUDE.md).
 - **One responsibility per `.py` file.**
 - **16 kHz mono WAV** is the canonical format at every processing boundary.
-- **Do NOT modify anything under `~/bongoSTEM/`** — copy assets only.
+- **Do NOT modify anything under `~/stormVoice/`** — copy assets only.
 - **DATABASE_URL** is read from the environment; defaults to `sqlite:///./stormvoice.db`.
 - **Frequent commits** — one per finished task minimum.
 - **Repo root:** `/home/cyberpunk/speech-recognition/`
@@ -41,8 +41,8 @@ stt/transcribe.py             transcribe() → str
 scripts/serve.py              FastAPI app — all 7 endpoints
 frontend/templates/index.html single-page UI
 frontend/static/js/app.js     vanilla JS — record, enroll, analyze, history
-frontend/static/css/          copied from ~/bongoSTEM/bongo/frontend/static/css/ (style.css only)
-frontend/static/fulcrum-transparent-bg.svg  copied from bongoSTEM
+frontend/static/css/          copied from ~/stormVoice/bongo/frontend/static/css/ (style.css only)
+frontend/static/fulcrum-transparent-bg.svg  copied from stormVoice
 tests/test_mfcc.py
 tests/test_spectrogram.py
 tests/test_fraud.py
@@ -1206,8 +1206,8 @@ git commit -m "feat(serve): FastAPI server with all 7 endpoints"
 ## Task 7: Frontend
 
 **Files:**
-- Create: `frontend/static/css/style.css` (copied from bongoSTEM — `style.css` only)
-- Create: `frontend/static/fulcrum-transparent-bg.svg` (copied from bongoSTEM)
+- Create: `frontend/static/css/style.css` (copied from stormVoice — `style.css` only)
+- Create: `frontend/static/fulcrum-transparent-bg.svg` (copied from stormVoice)
 - Overwrite: `frontend/templates/index.html`
 - Create: `frontend/static/js/app.js`
 
@@ -1215,11 +1215,11 @@ git commit -m "feat(serve): FastAPI server with all 7 endpoints"
 - Consumes: `POST /api/speakers/enroll`, `GET /api/speakers`, `POST /api/analyze`, `GET /api/sessions`.
 - Produces: single-page UI with Enroll tab, Analyze tab, and History tab.
 
-- [ ] **Step 1: Copy bongoSTEM assets**
+- [ ] **Step 1: Copy stormVoice assets**
 
 ```bash
-cp ~/bongoSTEM/bongo/frontend/static/css/style.css frontend/static/css/
-cp ~/bongoSTEM/bongo/frontend/static/fulcrum-transparent-bg.svg frontend/static/
+cp ~/stormVoice/bongo/frontend/static/css/style.css frontend/static/css/
+cp ~/stormVoice/bongo/frontend/static/fulcrum-transparent-bg.svg frontend/static/
 ```
 
 Verify:
@@ -1238,7 +1238,7 @@ ls frontend/static/css/ frontend/static/*.svg
   <title>stormVoice Lite</title>
   <link rel="stylesheet" href="/static/css/style.css" />
   <style>
-    /* Layout overrides — bongoSTEM base is dark/mono, we add our panels */
+    /* Layout overrides — stormVoice base is dark/mono, we add our panels */
     body { overflow: auto; user-select: auto; font-size: 13px; }
 
     #app { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
@@ -1595,7 +1595,7 @@ async function loadHistory() {
 
 ```bash
 git add frontend/
-git commit -m "feat(frontend): bongoSTEM fork + analyze/enroll/history single-page UI"
+git commit -m "feat(frontend): stormVoice fork + analyze/enroll/history single-page UI"
 ```
 
 ---
@@ -1654,7 +1654,7 @@ Enrollment is live — teammates just open the browser, go to **Enroll**, and re
 | STT | faster-whisper base.en |
 | Fraud engine | Rule-based keyword scoring |
 | Database | SQLite + SQLAlchemy |
-| Frontend | Vanilla JS + bongoSTEM CSS |
+| Frontend | Vanilla JS + stormVoice CSS |
 
 ## Tests
 

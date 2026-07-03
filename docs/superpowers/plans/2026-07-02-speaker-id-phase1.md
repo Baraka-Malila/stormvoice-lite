@@ -4,7 +4,7 @@
 
 **Goal:** Build the end-to-end Phase 1 speaker-identification pipeline — data ingest → MFCC + log-mel features → SVM baseline + small CNN → evaluation with confusion matrices → live-demo web app — using LibriSpeech placeholder speakers so it runs today with only Baraka's own voice.
 
-**Architecture:** Six Jupyter notebooks orchestrate the ML lifecycle (ingest → features → SVM → CNN → eval). Three small `.py` modules hold reusable helpers imported by the notebooks and the FastAPI server: `features/mfcc.py`, `features/spectrogram.py`, `models/cnn.py`. A single-file FastAPI app (`scripts/serve.py`) loads both trained artifacts once at startup and exposes `/predict`. Frontend is a fork of the bongoSTEM shell.
+**Architecture:** Six Jupyter notebooks orchestrate the ML lifecycle (ingest → features → SVM → CNN → eval). Three small `.py` modules hold reusable helpers imported by the notebooks and the FastAPI server: `features/mfcc.py`, `features/spectrogram.py`, `models/cnn.py`. A single-file FastAPI app (`scripts/serve.py`) loads both trained artifacts once at startup and exposes `/predict`. Frontend is a fork of the stormVoice shell.
 
 **Tech Stack:** Python 3.10+, librosa, scikit-learn, PyTorch, torchaudio (for LibriSpeech download), FastAPI + uvicorn, matplotlib, Plotly.js, vanilla JS + `MediaRecorder`. Tests use pytest; notebook smoke tests use `jupyter nbconvert --execute`.
 
@@ -18,7 +18,7 @@
 - **Fail fast on missing recordings** — clear error, no silent defaults.
 - **Split policy: 80/10/10 grouped by source file, stratified by speaker, seed = 42.**
 - **Directory layout matches the spec** — do not restructure.
-- **Do NOT modify anything under `~/bongoSTEM/`** — copy assets, never edit in place.
+- **Do NOT modify anything under `~/stormVoice/`** — copy assets, never edit in place.
 - **Frequent commits** — one commit per finished task minimum, more when a task has independently-reviewable sub-steps.
 
 ## File Structure
@@ -32,7 +32,7 @@
 - `tests/__init__.py`, `tests/test_mfcc.py`, `tests/test_spectrogram.py`, `tests/test_cnn.py`, `tests/test_serve.py` (Tasks 2, 3, 4, 10).
 - `notebooks/01_ingest.ipynb` through `notebooks/06_evaluate_and_compare.ipynb` (Tasks 5, 6, 7, 8, 9).
 - `scripts/serve.py` (Task 10).
-- `frontend/static/` (forked from bongoSTEM), `frontend/templates/index.html` (Task 11).
+- `frontend/static/` (forked from stormVoice), `frontend/templates/index.html` (Task 11).
 - `docs/design.md`, `docs/slides.md`, `docs/figures/` (Tasks 6, 9, 12).
 - `README.md` — rewritten with quickstart (Task 12).
 
@@ -1313,7 +1313,7 @@ git commit -m "feat(notebooks): evaluation and comparison with confusion matrice
 - Consumes: `models/artifacts/svm.joblib`, `models/artifacts/cnn.pt`, both feature helpers, `frontend/templates/index.html`, `frontend/static/**`.
 - Produces: HTTP endpoints `GET /`, `GET /static/*`, `POST /predict`. `POST /predict` returns the JSON schema defined in the spec (section 6.1). Consumed by Task 11 (frontend).
 
-The frontend directory does not exist yet; Task 10 uses a placeholder `index.html` so the server tests pass. Task 11 replaces the placeholder with the forked bongoSTEM shell.
+The frontend directory does not exist yet; Task 10 uses a placeholder `index.html` so the server tests pass. Task 11 replaces the placeholder with the forked stormVoice shell.
 
 - [ ] **Step 1: Create placeholder frontend files so tests can run**
 
@@ -1625,10 +1625,10 @@ git commit -m "feat(serve): FastAPI live-demo server with predict endpoint"
 
 ---
 
-## Task 11: Frontend fork from bongoSTEM
+## Task 11: Frontend fork from stormVoice
 
 **Files:**
-- Copy into: `frontend/static/css/`, `frontend/static/*.svg` (from `~/bongoSTEM/bongo/frontend/static/`)
+- Copy into: `frontend/static/css/`, `frontend/static/*.svg` (from `~/stormVoice/bongo/frontend/static/`)
 - Create: `frontend/static/js/app.js`
 - Overwrite: `frontend/templates/index.html`
 
@@ -1636,12 +1636,12 @@ git commit -m "feat(serve): FastAPI live-demo server with predict endpoint"
 - Consumes: `POST /predict` (Task 10 shape).
 - Produces: interactive record → predict UI. Terminal task of the plan for user-facing functionality.
 
-- [ ] **Step 1: Fork bongoSTEM shell assets**
+- [ ] **Step 1: Fork stormVoice shell assets**
 
 ```bash
-cp -r ~/bongoSTEM/bongo/frontend/static/css frontend/static/
-cp ~/bongoSTEM/bongo/frontend/static/fulcrum-black-bg-logo.svg frontend/static/
-cp ~/bongoSTEM/bongo/frontend/static/fulcrum-transparent-bg.svg frontend/static/
+cp -r ~/stormVoice/bongo/frontend/static/css frontend/static/
+cp ~/stormVoice/bongo/frontend/static/fulcrum-black-bg-logo.svg frontend/static/
+cp ~/stormVoice/bongo/frontend/static/fulcrum-transparent-bg.svg frontend/static/
 ls frontend/static/
 ```
 Expected: `css/`, both `.svg` files present.
@@ -1788,7 +1788,7 @@ If Task 10 tests pass but the browser flow errors, check the terminal running uv
 
 ```bash
 git add frontend/
-git commit -m "feat(frontend): fork bongoSTEM shell and wire record -> predict UI"
+git commit -m "feat(frontend): fork stormVoice shell and wire record -> predict UI"
 ```
 
 ---
@@ -1914,7 +1914,7 @@ Create with:
 6. Results — confusion matrices (`confmat_svm.png`, `confmat_cnn.png`), per-class F1 comparison (`f1_compare.png`).
 7. Live demo — record → prediction.
 8. Failure cases + noise robustness (SNR 15 dB).
-9. Future work — real teammate data swap-in, potential bongoSTEM integration (biometric identity gate).
+9. Future work — real teammate data swap-in, potential stormVoice integration (biometric identity gate).
 ```
 
 - [ ] **Step 5: Run all tests one last time**

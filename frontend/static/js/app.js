@@ -1,7 +1,12 @@
-/* stormVoice Lite — frontend */
+/* stormVoice Lite */
 
-const RECORD_MS = 4000;
-let isRecording = false;
+const RECORD_MS      = 4000;
+const ENROLL_MS      = 4000;
+const MAX_ENROLL_CLIPS = 10;
+
+let isRecording  = false;
+let modelReady   = false;
+let enrollBlobs  = [];
 
 // ── Loader ────────────────────────────────────────────────────────────────────
 document.getElementById("loader").addEventListener("click", () => {
@@ -16,65 +21,93 @@ document.getElementById("loader").addEventListener("click", () => {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
+  document.getElementById("mic-btn").disabled = true;
   try {
     const data = await fetchJSON("/api/status");
-    const loaded = data.svm_loaded || data.cnn_loaded;
+    modelReady = data.svm_loaded || data.cnn_loaded;
 
-    if (!loaded) {
+    if (!modelReady) {
       setBadge("no-model", "NO MODEL");
-      showView("no-model");
+      switchView("no-model");
       openPanel();
     } else {
       const parts = [];
-      if (data.svm_loaded) parts.push(`SVM`);
-      if (data.cnn_loaded) parts.push(`CNN`);
-      setBadge("ready", parts.join(" + ") + " READY");
-
-      const chips = document.getElementById("trained-speakers");
+      if (data.svm_loaded) parts.push("SVM");
+      if (data.cnn_loaded) parts.push("CNN");
+      setBadge("ready", parts.join("+") + " READY");
       const classes = [...new Set([...data.svm_classes, ...data.cnn_classes])];
-      chips.innerHTML = classes.map(c =>
-        `<span class="speaker-chip">${c}</span>`
-      ).join("");
-
-      showView("idle");
+      renderSpeakerChips(classes);
+      switchView("idle");
     }
   } catch (e) {
-    setBadge("no-model", "SERVER ERROR");
-    showView("error");
-    document.getElementById("error-text").textContent = e.message;
+    setBadge("error", "SERVER ERROR");
+    switchView("error");
+    document.getElementById("error-text").textContent =
+      "Cannot reach server: " + e.message;
     openPanel();
+  } finally {
+    document.getElementById("mic-btn").disabled = false;
   }
+  refreshEnrolledList();
   loadHistory();
 }
 
-// ── Fulcrum state ─────────────────────────────────────────────────────────────
+// ── Fulcrum ───────────────────────────────────────────────────────────────────
 function setFulcrum(state) {
   document.getElementById("fulcrum-svg").dataset.state = state;
 }
 
-// ── Badge ─────────────────────────────────────────────────────────────────────
+// ── Status badge ──────────────────────────────────────────────────────────────
 function setBadge(state, text) {
   const el = document.getElementById("mode-badge");
   el.dataset.state = state;
-  el.textContent = text;
+  el.textContent   = text;
 }
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
 function openPanel()  { document.body.classList.add("panel-pinned"); }
 function closePanel() { document.body.classList.remove("panel-pinned"); }
-function togglePanel() { document.body.classList.toggle("panel-pinned"); }
 
-document.getElementById("panel-btn").addEventListener("click", togglePanel);
+document.getElementById("panel-btn").addEventListener("click", () =>
+  document.body.classList.toggle("panel-pinned")
+);
 document.getElementById("panel-close").addEventListener("click", closePanel);
 
-// ── Views (inside panel) ──────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll(".panel-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".panel-tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
+    openPanel();
+    if (btn.dataset.tab === "history") loadHistory();
+    if (btn.dataset.tab === "enroll")  refreshEnrolledList();
+  });
+});
+
+function switchTab(name) {
+  document.querySelectorAll(".panel-tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+  document.querySelector(`.panel-tab[data-tab="${name}"]`).classList.add("active");
+  document.getElementById(`tab-${name}`).classList.add("active");
+}
+
+// ── Analyze views ─────────────────────────────────────────────────────────────
 const VIEWS = ["no-model", "idle", "results", "error"];
 
-function showView(name) {
+function switchView(name) {
   VIEWS.forEach(v => {
     const el = document.getElementById(`view-${v}`);
     if (el) el.style.display = v === name ? "block" : "none";
   });
+}
+
+function renderSpeakerChips(classes) {
+  document.getElementById("trained-speakers").innerHTML =
+    classes.length
+      ? classes.map(c => `<span class="speaker-chip">${c}</span>`).join("")
+      : `<span class="view-body">none yet</span>`;
 }
 
 // ── Status line ───────────────────────────────────────────────────────────────
@@ -100,24 +133,25 @@ function recordClip(durationMs) {
   );
 }
 
-// ── Mic button ────────────────────────────────────────────────────────────────
-document.getElementById("mic-btn").addEventListener("click", async () => {
+// ── Mic button (Analyze) ──────────────────────────────────────────────────────
+const micBtn = document.getElementById("mic-btn");
+
+micBtn.addEventListener("click", async () => {
   if (isRecording) return;
-  const badgeEl = document.getElementById("mode-badge");
-  if (badgeEl.dataset.state === "no-model") {
+  if (!modelReady) {
+    switchTab("enroll");
     openPanel();
     return;
   }
 
   isRecording = true;
-  document.getElementById("mic-btn").classList.add("recording");
+  micBtn.classList.add("recording");
   setFulcrum("listening");
   setStatus(`Recording ${RECORD_MS / 1000} s…`);
 
   try {
     const blob = await recordClip(RECORD_MS);
-    document.getElementById("mic-btn").classList.remove("recording");
-    document.getElementById("mic-btn").classList.add("processing");
+    micBtn.classList.replace("recording", "processing");
     setFulcrum("processing");
     setStatus("Analyzing…");
 
@@ -130,25 +164,22 @@ document.getElementById("mic-btn").addEventListener("click", async () => {
     setStatus("");
     loadHistory();
   } catch (err) {
-    showView("error");
+    switchView("error");
     document.getElementById("error-text").textContent = err.message;
+    switchTab("analyze");
     openPanel();
     setFulcrum("idle");
     setStatus("");
   } finally {
     isRecording = false;
-    document.getElementById("mic-btn").classList.remove("recording", "processing");
+    micBtn.classList.remove("recording", "processing");
   }
 });
 
-// ── Render result ─────────────────────────────────────────────────────────────
+// ── Render analysis result ────────────────────────────────────────────────────
 function badgeCls(level) {
-  return ({
-    Low:      "badge-low",
-    Medium:   "badge-medium",
-    High:     "badge-high",
-    Critical: "badge-critical",
-  })[level] || "badge-low";
+  return ({ Low: "badge-low", Medium: "badge-medium",
+            High: "badge-high", Critical: "badge-critical" })[level] || "badge-low";
 }
 
 function renderResult(data) {
@@ -159,17 +190,16 @@ function renderResult(data) {
   setText("r-cnn-conf", data.cnn_confidence != null
     ? `${(data.cnn_confidence * 100).toFixed(1)}%` : "—");
   setText("r-transcript", data.transcript || "(no speech detected)");
-  setText("r-category",   data.fraud_category);
-  setText("r-action",     data.recommended_action);
+  setText("r-category", data.fraud_category);
+  setText("r-action",   data.recommended_action);
 
   document.getElementById("r-risk").innerHTML =
     `<span class="badge ${badgeCls(data.risk_level)}">${data.risk_level}</span>` +
     `<span class="badge-score">score ${data.risk_score}</span>`;
 
-  const signalsEl = document.getElementById("r-signals");
   const signalsBlock = document.getElementById("r-signals-block");
   if (data.detected_signals && data.detected_signals.length) {
-    signalsEl.innerHTML = data.detected_signals
+    document.getElementById("r-signals").innerHTML = data.detected_signals
       .map(s => `<span class="signal-tag">${s.keyword} +${s.points}</span>`).join("");
     signalsBlock.style.display = "block";
   } else {
@@ -178,35 +208,138 @@ function renderResult(data) {
 
   const vizBlock = document.getElementById("viz-block");
   if (data.waveform_png_b64) {
-    document.getElementById("waveform-img").src = "data:image/png;base64," + data.waveform_png_b64;
+    document.getElementById("waveform-img").src    = "data:image/png;base64," + data.waveform_png_b64;
     document.getElementById("spectrogram-img").src = "data:image/png;base64," + data.spectrogram_png_b64;
     vizBlock.style.display = "block";
   } else {
     vizBlock.style.display = "none";
   }
 
-  showView("results");
+  switchView("results");
+  switchTab("analyze");
   openPanel();
 }
 
-// ── History ───────────────────────────────────────────────────────────────────
+// ── Enroll tab ────────────────────────────────────────────────────────────────
+const enrollRecordBtn = document.getElementById("enroll-record-btn");
+const enrollSubmitBtn = document.getElementById("enroll-submit-btn");
+const enrollClearBtn  = document.getElementById("enroll-clear-btn");
+const enrollStatus    = document.getElementById("enroll-status");
+const clipsList       = document.getElementById("clips-list");
+const clipCounter     = document.getElementById("clip-counter");
+
+enrollRecordBtn.addEventListener("click", async () => {
+  if (enrollRecordBtn.classList.contains("recording")) return;
+  if (enrollBlobs.length >= MAX_ENROLL_CLIPS) {
+    setEnrollStatus(`Max ${MAX_ENROLL_CLIPS} clips reached.`, "error");
+    return;
+  }
+
+  enrollRecordBtn.classList.add("recording");
+  setEnrollStatus(`Recording clip ${enrollBlobs.length + 1}…`);
+  try {
+    const blob = await recordClip(ENROLL_MS);
+    enrollBlobs.push(blob);
+    updateClipList();
+    setEnrollStatus(
+      enrollBlobs.length < 3
+        ? `${enrollBlobs.length} clip(s) — record at least 3 for good accuracy`
+        : `${enrollBlobs.length} clip(s) — ready to enroll`
+    );
+    enrollSubmitBtn.disabled = false;
+  } catch (err) {
+    setEnrollStatus("Mic error: " + err.message, "error");
+  } finally {
+    enrollRecordBtn.classList.remove("recording");
+  }
+});
+
+function updateClipList() {
+  clipsList.innerHTML = enrollBlobs.map((_, i) =>
+    `<span class="clip-tag">clip ${i + 1}</span>`
+  ).join("");
+  clipCounter.textContent = `(${enrollBlobs.length} recorded)`;
+}
+
+enrollClearBtn.addEventListener("click", () => {
+  enrollBlobs = [];
+  updateClipList();
+  enrollSubmitBtn.disabled = true;
+  setEnrollStatus("");
+});
+
+enrollSubmitBtn.addEventListener("click", async () => {
+  const name = document.getElementById("enroll-name").value.trim();
+  if (!name) { setEnrollStatus("Enter a speaker name first.", "error"); return; }
+  if (!enrollBlobs.length) { setEnrollStatus("Record at least one clip.", "error"); return; }
+
+  enrollSubmitBtn.disabled = true;
+  setEnrollStatus("Enrolling and retraining SVM…");
+  setFulcrum("processing");
+
+  const fd = new FormData();
+  fd.append("name", name);
+  enrollBlobs.forEach((b, i) => fd.append("clips", b, `clip${i}.webm`));
+
+  try {
+    const data = await fetchJSON("/api/speakers/enroll", { method: "POST", body: fd });
+    setEnrollStatus(`✓ Enrolled "${data.speaker}" (${data.clips_saved} clips). ${data.message}`, "ok");
+
+    // Update model state
+    if (data.svm_classes && data.svm_classes.length >= 2) {
+      modelReady = true;
+      setBadge("ready", "SVM READY");
+      renderSpeakerChips(data.svm_classes);
+      switchView("idle");
+    }
+
+    // Reset form
+    enrollBlobs = [];
+    updateClipList();
+    document.getElementById("enroll-name").value = "";
+    refreshEnrolledList();
+  } catch (err) {
+    setEnrollStatus("Error: " + err.message, "error");
+    enrollSubmitBtn.disabled = false;
+  } finally {
+    setFulcrum("idle");
+  }
+});
+
+function setEnrollStatus(msg, cls = "") {
+  enrollStatus.textContent = msg;
+  enrollStatus.className   = "enroll-status" + (cls ? ` ${cls}` : "");
+}
+
+async function refreshEnrolledList() {
+  const el = document.getElementById("enrolled-list");
+  try {
+    const names = await fetchJSON("/api/speakers");
+    el.innerHTML = names.length
+      ? names.map(n => `<span class="speaker-chip">${n}</span>`).join("")
+      : `<span class="view-body">none yet</span>`;
+  } catch { /* ignore */ }
+}
+
+// ── History tab ───────────────────────────────────────────────────────────────
 async function loadHistory() {
   const tbody = document.getElementById("history-body");
   try {
     const rows = await fetchJSON("/api/sessions");
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="4" class="h-empty">no sessions yet</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="h-empty">no sessions yet</td></tr>`;
       return;
     }
-    tbody.innerHTML = rows.slice(0, 10).map(s => `
+    tbody.innerHTML = rows.slice(0, 20).map(s => `
       <tr>
-        <td>${s.svm_speaker}</td>
-        <td>${s.cnn_speaker}</td>
+        <td title="${s.svm_speaker}">${s.svm_speaker}</td>
+        <td title="${s.cnn_speaker}">${s.cnn_speaker}</td>
         <td><span class="badge ${badgeCls(s.risk_level)}" style="font-size:9px">${s.risk_level}</span></td>
+        <td title="${s.transcript}">${(s.transcript || "").slice(0, 28) || "—"}</td>
         <td>${new Date(s.created_at).toLocaleTimeString()}</td>
       </tr>`).join("");
   } catch {
-    tbody.innerHTML = `<tr><td colspan="4" class="h-empty">error</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="h-empty">error</td></tr>`;
   }
 }
 
@@ -220,7 +353,7 @@ async function fetchJSON(url, opts = {}) {
   const res = await fetch(url, opts);
   if (!res.ok) {
     const msg = await res.text().catch(() => res.statusText);
-    throw new Error(`${res.status}: ${msg}`);
+    throw new Error(msg || `HTTP ${res.status}`);
   }
   return res.json();
 }

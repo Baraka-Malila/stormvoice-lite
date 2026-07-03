@@ -29,13 +29,13 @@
 <!-- ── App ───────────────────────────────────────────────────── -->
 <div id="app" class="app-hidden">
 
-  <!-- Small brand label — top right like bongoSTEM -->
+  <!-- Brand — top right -->
   <div id="app-logo">stormvoice</div>
 
   <!-- Model status pill — top centre -->
   <div id="mode-badge" data-state="loading">LOADING…</div>
 
-  <!-- Fulcrum animation — fills viewport, shifts right when panel pinned -->
+  <!-- Fulcrum animation — centres between panel and viewport edge -->
   <div id="fulcrum-container">
     <svg id="fulcrum-svg" data-state="idle"
          viewBox="-10 -10 168.94 295.23" xmlns="http://www.w3.org/2000/svg">
@@ -46,10 +46,16 @@
     </svg>
   </div>
 
-  <!-- Results panel — slides in from left -->
+  <!-- Side panel ──────────────────────────────────────────────── -->
   <div id="content-panel">
+
+    <!-- Panel header with tab bar -->
     <div id="panel-header">
-      <span id="panel-title">ANALYSIS</span>
+      <div class="panel-tabs" id="panel-tabs">
+        <button class="panel-tab active" data-tab="analyze">ANALYZE</button>
+        <button class="panel-tab" data-tab="enroll">ENROLL</button>
+        <button class="panel-tab" data-tab="history">HISTORY</button>
+      </div>
       <button id="panel-close" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -57,103 +63,144 @@
       </button>
     </div>
 
-    <!-- State: no model -->
-    <div id="view-no-model" class="panel-view" style="display:none">
-      <p class="view-heading">No models loaded</p>
-      <p class="view-body">Generate placeholder data then run both training notebooks:</p>
-      <pre class="code-block">python scripts/generate_placeholder_data.py
+    <!-- ── ANALYZE tab ────────────────────────────────────────── -->
+    <div id="tab-analyze" class="tab-pane active">
 
-# then open Jupyter:
-jupyter notebook notebooks/01_classical_pipeline.ipynb
+      <!-- view: no model loaded -->
+      <div id="view-no-model" class="panel-view" style="display:none">
+        <p class="view-heading">No model loaded</p>
+        <p class="view-body">Enroll at least 2 speakers first — the SVM trains automatically after each enrollment.</p>
+        <p class="view-body" style="margin-top:0.6rem">For CNN + offline training, run:</p>
+        <pre class="code-block">jupyter notebook notebooks/01_classical_pipeline.ipynb
 jupyter notebook notebooks/02_neural_pipeline.ipynb</pre>
-      <p class="view-body" style="margin-top:1rem">Restart the server afterwards.</p>
-    </div>
+      </div>
 
-    <!-- State: ready / idle -->
-    <div id="view-idle" class="panel-view">
-      <p class="view-heading">Ready</p>
-      <div id="trained-speakers" class="speakers-chips"></div>
-      <p class="view-body" style="margin-top:0.9rem">Press the mic to record 4 seconds and analyze.</p>
-    </div>
+      <!-- view: idle / ready -->
+      <div id="view-idle" class="panel-view" style="display:none">
+        <p class="view-heading" style="margin-bottom:0.5rem">Ready</p>
+        <div id="trained-speakers" class="speakers-chips"></div>
+        <p class="view-body" style="margin-top:0.8rem">Press the mic to record 4 s and analyze.</p>
+      </div>
 
-    <!-- State: results -->
-    <div id="view-results" class="panel-view" style="display:none">
+      <!-- view: analysis results -->
+      <div id="view-results" class="panel-view" style="display:none">
 
-      <div class="result-block">
-        <div class="r-label">SVM SPEAKER</div>
-        <div class="r-speaker-row">
-          <span id="r-svm-name" class="r-speaker">—</span>
-          <span id="r-svm-conf" class="r-conf">—</span>
+        <div class="result-block">
+          <div class="r-label">SVM SPEAKER</div>
+          <div class="r-speaker-row">
+            <span id="r-svm-name" class="r-speaker">—</span>
+            <span id="r-svm-conf" class="r-conf">—</span>
+          </div>
+        </div>
+
+        <div class="result-block">
+          <div class="r-label">CNN SPEAKER</div>
+          <div class="r-speaker-row">
+            <span id="r-cnn-name" class="r-speaker">—</span>
+            <span id="r-cnn-conf" class="r-conf">—</span>
+          </div>
+        </div>
+
+        <div class="result-block">
+          <div class="r-label">TRANSCRIPT</div>
+          <div id="r-transcript" class="r-transcript">—</div>
+        </div>
+
+        <div class="result-block">
+          <div class="r-label">RISK</div>
+          <div id="r-risk">—</div>
+        </div>
+
+        <div class="result-block">
+          <div class="r-label">CATEGORY</div>
+          <div id="r-category" class="r-text">—</div>
+        </div>
+
+        <div class="result-block" id="r-signals-block" style="display:none">
+          <div class="r-label">FRAUD SIGNALS</div>
+          <div id="r-signals"></div>
+        </div>
+
+        <div class="result-block">
+          <div class="r-label">RECOMMENDED ACTION</div>
+          <div id="r-action" class="r-action">—</div>
+        </div>
+
+        <div class="result-block" id="viz-block" style="display:none">
+          <div class="r-label">WAVEFORM</div>
+          <img id="waveform-img" class="viz-img" alt="waveform" />
+          <div class="r-label" style="margin-top:0.7rem">LOG-MEL SPECTROGRAM</div>
+          <img id="spectrogram-img" class="viz-img" alt="spectrogram" />
         </div>
       </div>
 
-      <div class="result-block">
-        <div class="r-label">CNN SPEAKER</div>
-        <div class="r-speaker-row">
-          <span id="r-cnn-name" class="r-speaker">—</span>
-          <span id="r-cnn-conf" class="r-conf">—</span>
+      <!-- view: error -->
+      <div id="view-error" class="panel-view" style="display:none">
+        <p class="view-heading view-heading--error">Error</p>
+        <p id="error-text" class="view-body"></p>
+      </div>
+
+    </div><!-- #tab-analyze -->
+
+    <!-- ── ENROLL tab ─────────────────────────────────────────── -->
+    <div id="tab-enroll" class="tab-pane">
+
+      <div class="enroll-form">
+        <div>
+          <label class="r-label" for="enroll-name">SPEAKER NAME</label>
+          <input type="text" id="enroll-name" placeholder="e.g. baraka" autocomplete="off" />
+        </div>
+
+        <div>
+          <div class="r-label">CLIPS <span id="clip-counter">(0 recorded)</span></div>
+          <div id="clips-list" class="clips-list"></div>
+        </div>
+
+        <div class="enroll-controls">
+          <button id="enroll-record-btn" class="bar-icon mic-icon" title="Record clip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <rect x="9" y="2" width="6" height="11" rx="3"/>
+              <path d="M5 10a7 7 0 0 0 14 0"/>
+              <line x1="12" y1="17" x2="12" y2="22"/>
+              <line x1="8" y1="22" x2="16" y2="22"/>
+            </svg>
+          </button>
+          <button id="enroll-submit-btn" class="submit-btn" disabled>Enroll Speaker</button>
+          <button id="enroll-clear-btn" class="clear-btn">Clear</button>
+        </div>
+
+        <div id="enroll-status" class="enroll-status"></div>
+      </div>
+
+      <div style="margin-top:1.2rem">
+        <div class="r-label" style="margin-bottom:0.5rem">ENROLLED SPEAKERS</div>
+        <div id="enrolled-list" class="speakers-chips">
+          <span class="view-body">none yet</span>
         </div>
       </div>
 
-      <div class="result-block">
-        <div class="r-label">TRANSCRIPT</div>
-        <div id="r-transcript" class="r-transcript">—</div>
-      </div>
+    </div><!-- #tab-enroll -->
 
-      <div class="result-block">
-        <div class="r-label">RISK</div>
-        <div id="r-risk">—</div>
-      </div>
-
-      <div class="result-block">
-        <div class="r-label">CATEGORY</div>
-        <div id="r-category" class="r-text">—</div>
-      </div>
-
-      <div class="result-block" id="r-signals-block" style="display:none">
-        <div class="r-label">SIGNALS</div>
-        <div id="r-signals"></div>
-      </div>
-
-      <div class="result-block">
-        <div class="r-label">ACTION</div>
-        <div id="r-action" class="r-action">—</div>
-      </div>
-
-      <div class="result-block" id="viz-block" style="display:none">
-        <div class="r-label">WAVEFORM</div>
-        <img id="waveform-img" class="viz-img" alt="waveform" />
-        <div class="r-label" style="margin-top:0.6rem">SPECTROGRAM</div>
-        <img id="spectrogram-img" class="viz-img" alt="spectrogram" />
-      </div>
-    </div>
-
-    <!-- State: error -->
-    <div id="view-error" class="panel-view" style="display:none">
-      <p class="view-heading view-heading--error">Error</p>
-      <p id="error-text" class="view-body"></p>
-    </div>
-
-    <!-- History section — always visible at bottom of panel -->
-    <div id="history-section">
-      <div class="r-label" style="margin-bottom:0.5rem">RECENT SESSIONS</div>
+    <!-- ── HISTORY tab ────────────────────────────────────────── -->
+    <div id="tab-history" class="tab-pane">
       <table id="history-table">
         <thead><tr>
-          <th>SVM</th><th>CNN</th><th>Risk</th><th>Time</th>
+          <th>SVM</th><th>CNN</th><th>Risk</th><th>Transcript</th><th>Time</th>
         </tr></thead>
         <tbody id="history-body">
-          <tr><td colspan="4" class="h-empty">no sessions yet</td></tr>
+          <tr><td colspan="5" class="h-empty">no sessions yet</td></tr>
         </tbody>
       </table>
-    </div>
+    </div><!-- #tab-history -->
+
   </div><!-- #content-panel -->
 
-  <!-- Status line — above icon bar -->
+  <!-- Status line above mic -->
   <div id="status-line"></div>
 
   <!-- Icon bar -->
   <nav id="icon-bar">
-    <button id="panel-btn" class="bar-icon" title="Toggle results panel" aria-label="Results">
+    <button id="panel-btn" class="bar-icon" title="Toggle panel" aria-label="Panel">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
         <rect x="3" y="3" width="18" height="18" rx="2"/>
         <line x1="9" y1="3" x2="9" y2="21"/>
