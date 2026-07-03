@@ -13,6 +13,15 @@ let contStream   = null;
 let contChunk    = 0;
 let contActive   = false;
 
+// ── Session accumulation (resets each recording session) ─────────────────────
+const RISK_ORDER = { Low: 0, Medium: 1, High: 2, Critical: 3 };
+let sessionTranscript = "";
+let sessionMaxScore   = 0;
+let sessionMaxLevel   = "Low";
+let sessionMaxCategory = "";
+let sessionMaxAction   = "";
+let sessionSignals    = [];
+
 // ── Loader ────────────────────────────────────────────────────────────────────
 document.getElementById("loader").addEventListener("click", () => {
   const loader = document.getElementById("loader");
@@ -156,8 +165,14 @@ async function startContinuous() {
     return;
   }
 
-  contActive = true;
-  contChunk  = 0;
+  contActive        = true;
+  contChunk         = 0;
+  sessionTranscript = "";
+  sessionMaxScore   = 0;
+  sessionMaxLevel   = "Low";
+  sessionMaxCategory = "";
+  sessionMaxAction   = "";
+  sessionSignals    = [];
   micBtn.classList.add("recording");
   setFulcrum("listening");
   setStatus("Listening — click mic to stop");
@@ -177,7 +192,40 @@ async function startContinuous() {
     fd.append("audio", e.data, `chunk${n}.webm`);
     try {
       const data = await fetchJSON("/api/analyze", { method: "POST", body: fd });
-      renderResult(data);
+
+      // Accumulate transcript across chunks
+      if (data.transcript) {
+        sessionTranscript = sessionTranscript
+          ? sessionTranscript + " " + data.transcript
+          : data.transcript;
+      }
+
+      // Risk only escalates — keep the worst seen this session
+      if (data.risk_score > sessionMaxScore) {
+        sessionMaxScore    = data.risk_score;
+        sessionMaxCategory = data.fraud_category;
+        sessionMaxAction   = data.recommended_action;
+      }
+      if ((RISK_ORDER[data.risk_level] ?? 0) > (RISK_ORDER[sessionMaxLevel] ?? 0)) {
+        sessionMaxLevel = data.risk_level;
+      }
+
+      // Union signals by keyword
+      for (const sig of (data.detected_signals || [])) {
+        if (!sessionSignals.some(s => s.keyword === sig.keyword)) {
+          sessionSignals.push(sig);
+        }
+      }
+
+      renderResult({
+        ...data,
+        transcript:       sessionTranscript || data.transcript,
+        risk_score:       sessionMaxScore,
+        risk_level:       sessionMaxLevel,
+        fraud_category:   sessionMaxCategory || data.fraud_category,
+        recommended_action: sessionMaxAction || data.recommended_action,
+        detected_signals: sessionSignals,
+      });
       loadHistory();
     } catch (err) {
       // Show error but keep recording — one bad chunk shouldn't kill the session
