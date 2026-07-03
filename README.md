@@ -1,42 +1,63 @@
 # stormVoice Lite
 
-Speaker identification and real-time voice fraud detection. Class project for the Speech Processing module.
+Speaker identification + real-time fraud detection. Group assignment — Pattern Recognition module.
 
-**What it does:** Record a voice clip → identifies the speaker → transcribes speech → detects fraud language → returns risk level + recommended action.
+**What it does:** Record a 4-second voice clip → identify speaker (SVM + CNN) → transcribe speech → detect fraud keywords → return risk level + recommended action.
 
-## Quickstart
+## Quick start (teammates)
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+git clone <repo-url>
+cd speech-recognition
+bash setup.sh
+```
 
+`setup.sh` creates the venv, installs deps, and generates placeholder audio for 4 speakers.
+
+## Train the models
+
+Open each notebook in Jupyter and run all cells:
+
+```bash
+source venv/bin/activate
+jupyter notebook
+```
+
+1. `notebooks/01_classical_pipeline.ipynb` — MFCC → SVM
+2. `notebooks/02_neural_pipeline.ipynb`    — Log-mel spectrogram → CNN
+
+Both save trained models to `models/`. Restart the server to pick them up.
+
+## Add your own recordings
+
+```
+data/recordings/
+  your_name/
+    001.wav
+    002.wav
+    ...    ← 3-second WAV clips, 16 kHz mono
+```
+
+Then re-run both notebooks and restart the server.
+
+## Start the server
+
+```bash
 uvicorn scripts.serve:app --reload
 # open http://127.0.0.1:8000
 ```
 
-First run downloads the faster-whisper `base.en` model (~145 MB, cached after that).
-
-## Usage
-
-1. **Enroll tab** — record 1–3 clips per group member and submit. Each enrolled speaker becomes a known identity.
-2. **Analyze tab** — click Record & Analyze, speak for ~4 seconds. You get: speaker name + confidence, transcript, detected fraud signals, risk level, and recommended action.
-3. **History tab** — browse all past analysis sessions.
-
-## Swapping in real teammate data
-
-Enrollment is live — teammates open the browser, go to **Enroll**, record clips, submit. No code changes, no retraining needed.
-
-## Stack
+## Architecture
 
 | Layer | Choice |
-|-------|--------|
-| Backend | FastAPI + uvicorn |
-| Speaker ID | MFCC (120-dim) nearest-centroid matching |
+|---|---|
+| Features | MFCC 120-dim (20 coeff + Δ + ΔΔ) / Log-mel 64×300 |
+| Classical | SVM (RBF, GridSearchCV) via scikit-learn |
+| Neural | 3-layer CNN via PyTorch |
 | STT | faster-whisper base.en |
-| Fraud engine | Rule-based keyword scoring |
-| Database | SQLite + SQLAlchemy |
-| Frontend | Vanilla JS + bongoSTEM CSS shell |
+| Fraud | Rule-based keyword scoring |
+| Backend | FastAPI + SQLite/SQLAlchemy |
+| Frontend | Vanilla JS, bongoSTEM CSS shell |
 
 ## Tests
 
@@ -50,5 +71,3 @@ pytest -v
 export DATABASE_URL=postgresql://user:pass@host/dbname
 uvicorn scripts.serve:app --reload
 ```
-
-No other changes needed — SQLAlchemy handles it.

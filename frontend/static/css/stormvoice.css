@@ -1,0 +1,214 @@
+/* ── stormVoice Lite — app-specific styles on top of style.css ── */
+
+/* Allow scrolling inside the panel */
+body { overflow: hidden; }
+
+/* Fulcrum SVG: centred inside its container */
+#fulcrum-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#fulcrum-svg {
+  width: 200px;
+  height: auto;
+  fill: #fff;
+}
+
+/* ── Mode badge repurposed as model status pill ─────────────── */
+#mode-badge[data-state="loading"]  { color: var(--fg-muted); border-color: rgba(255,255,255,0.1); }
+#mode-badge[data-state="ready"]    { color: rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.22); }
+#mode-badge[data-state="no-model"] { color: rgba(255,100,100,0.7); border-color: rgba(255,100,100,0.25); }
+
+/* ── Panel views ─────────────────────────────────────────────── */
+#content-panel {
+  overflow-y: auto;
+  gap: 0;
+}
+.panel-view {
+  flex-shrink: 0;
+  padding: 0 0 1rem;
+}
+
+.view-heading {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  margin-bottom: 0.7rem;
+}
+.view-heading--error { color: rgba(255,80,80,0.8); }
+
+.view-body {
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--fg-muted);
+}
+
+.code-block {
+  font-size: 10px;
+  line-height: 1.8;
+  color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px;
+  padding: 0.7rem 0.9rem;
+  white-space: pre-wrap;
+  margin-top: 0.6rem;
+}
+
+/* Speaker chips in idle view */
+.speakers-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+.speaker-chip {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 3px 11px;
+}
+
+/* ── Result blocks ───────────────────────────────────────────── */
+.result-block {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.result-block:last-child { border-bottom: none; }
+
+.r-label {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-bottom: 0.3rem;
+}
+.r-speaker-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+.r-speaker {
+  font-size: 1.25rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+}
+.r-conf {
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+}
+.r-transcript {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--fg-dim);
+  font-style: italic;
+}
+.r-text {
+  font-size: 12px;
+  color: var(--fg-dim);
+}
+.r-action {
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.4);
+  border-left: 2px solid rgba(255,255,255,0.12);
+  padding-left: 0.6rem;
+}
+
+/* ── Risk badges (monochrome variants) ───────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.badge-low      { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.12); }
+.badge-medium   { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6);  border: 1px solid rgba(255,255,255,0.2); }
+.badge-high     { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.35); }
+.badge-critical { background: rgba(255,255,255,0.14); color: #fff;                   border: 1px solid rgba(255,255,255,0.6); }
+
+.badge-score {
+  font-size: 10px;
+  color: var(--fg-muted);
+  margin-left: 0.5rem;
+}
+
+/* Signal tags */
+.signal-tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--fg-dim);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  margin: 2px 2px 2px 0;
+  letter-spacing: 0.05em;
+}
+
+/* Visualisations */
+.viz-img {
+  width: 100%;
+  border-radius: 4px;
+  display: block;
+  background: #000;
+}
+
+/* ── History table ───────────────────────────────────────────── */
+#history-section {
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+#history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+#history-table th {
+  text-align: left;
+  color: var(--fg-muted);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  padding: 0.25rem 0.4rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+#history-table td {
+  padding: 0.3rem 0.4rem;
+  color: var(--fg-dim);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+.h-empty { color: var(--fg-muted); text-align: center; }
+
+/* ── Status line ─────────────────────────────────────────────── */
+#status-line {
+  position: fixed;
+  bottom: calc(2.4rem + 60px + 0.8rem);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--fg-muted);
+  pointer-events: none;
+  z-index: 40;
+  text-align: center;
+  white-space: nowrap;
+  transition: left var(--transition), transform var(--transition);
+}
+body.panel-pinned #status-line {
+  left: calc(var(--panel-w) + (100vw - var(--panel-w)) / 2);
+}
