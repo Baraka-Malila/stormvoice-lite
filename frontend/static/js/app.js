@@ -1,12 +1,26 @@
 /* stormVoice Lite */
 
-const RECORD_MS      = 4000;
-const ENROLL_MS      = 4000;
+const ENROLL_MS        = 4000;
 const MAX_ENROLL_CLIPS = 10;
+const CHUNK_MS         = 4000; // continuous analysis window size
 
-let isRecording  = false;
 let modelReady   = false;
 let enrollBlobs  = [];
+
+// ── Continuous recording state ────────────────────────────────────────────────
+let contRecorder = null;
+let contStream   = null;
+let contChunk    = 0;
+let contActive   = false;
+
+// ── Session accumulation (resets each recording session) ─────────────────────
+const RISK_ORDER = { Low: 0, Medium: 1, High: 2, Critical: 3 };
+let sessionTranscript = "";
+let sessionMaxScore   = 0;
+let sessionMaxLevel   = "Low";
+let sessionMaxCategory = "";
+let sessionMaxAction   = "";
+let sessionSignals    = [];
 
 // ── Loader ────────────────────────────────────────────────────────────────────
 document.getElementById("loader").addEventListener("click", () => {
@@ -133,48 +147,118 @@ function recordClip(durationMs) {
   );
 }
 
-// ── Mic button (Analyze) ──────────────────────────────────────────────────────
+// ── Continuous recording ──────────────────────────────────────────────────────
 const micBtn = document.getElementById("mic-btn");
 
-micBtn.addEventListener("click", async () => {
-  if (isRecording) return;
-  if (!modelReady) {
-    switchTab("enroll");
-    openPanel();
+micBtn.addEventListener("click", () => {
+  if (!modelReady) { switchTab("enroll"); openPanel(); return; }
+  contActive ? stopContinuous() : startContinuous();
+});
+
+async function startContinuous() {
+  try {
+    contStream   = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    switchView("error");
+    document.getElementById("error-text").textContent = "Mic access denied: " + err.message;
+    switchTab("analyze"); openPanel();
     return;
   }
 
-  isRecording = true;
+  contActive        = true;
+  contChunk         = 0;
+  sessionTranscript = "";
+  sessionMaxScore   = 0;
+  sessionMaxLevel   = "Low";
+  sessionMaxCategory = "";
+  sessionMaxAction   = "";
+  sessionSignals    = [];
   micBtn.classList.add("recording");
   setFulcrum("listening");
-  setStatus(`Recording ${RECORD_MS / 1000} s…`);
+  setStatus("Listening — click mic to stop");
 
-  try {
-    const blob = await recordClip(RECORD_MS);
-    micBtn.classList.replace("recording", "processing");
-    setFulcrum("processing");
-    setStatus("Analyzing…");
+  contRecorder = new MediaRecorder(contStream, { mimeType: "audio/webm" });
+
+  contRecorder.ondataavailable = async (e) => {
+    if (!e.data || e.data.size < 500) return; // skip empty/silent tail chunks
+    contChunk++;
+    const n = contChunk;
+
+    // Brief processing flash — don't change if already stopped
+    if (contActive) { micBtn.classList.replace("recording", "processing"); setFulcrum("processing"); }
+    setStatus(`Chunk ${n} — analyzing…`);
 
     const fd = new FormData();
-    fd.append("audio", blob, "clip.webm");
-    const data = await fetchJSON("/api/analyze", { method: "POST", body: fd });
+    fd.append("audio", e.data, `chunk${n}.webm`);
+    try {
+      const data = await fetchJSON("/api/analyze", { method: "POST", body: fd });
 
-    renderResult(data);
-    setFulcrum("idle");
-    setStatus("");
-    loadHistory();
-  } catch (err) {
-    switchView("error");
-    document.getElementById("error-text").textContent = err.message;
-    switchTab("analyze");
-    openPanel();
-    setFulcrum("idle");
-    setStatus("");
-  } finally {
-    isRecording = false;
+      // Accumulate transcript across chunks
+      if (data.transcript) {
+        sessionTranscript = sessionTranscript
+          ? sessionTranscript + " " + data.transcript
+          : data.transcript;
+      }
+
+      // Risk only escalates — keep the worst seen this session
+      if (data.risk_score > sessionMaxScore) {
+        sessionMaxScore    = data.risk_score;
+        sessionMaxCategory = data.fraud_category;
+        sessionMaxAction   = data.recommended_action;
+      }
+      if ((RISK_ORDER[data.risk_level] ?? 0) > (RISK_ORDER[sessionMaxLevel] ?? 0)) {
+        sessionMaxLevel = data.risk_level;
+      }
+
+      // Union signals by keyword
+      for (const sig of (data.detected_signals || [])) {
+        if (!sessionSignals.some(s => s.keyword === sig.keyword)) {
+          sessionSignals.push(sig);
+        }
+      }
+
+      renderResult({
+        ...data,
+        transcript:       sessionTranscript || data.transcript,
+        risk_score:       sessionMaxScore,
+        risk_level:       sessionMaxLevel,
+        fraud_category:   sessionMaxCategory || data.fraud_category,
+        recommended_action: sessionMaxAction || data.recommended_action,
+        detected_signals: sessionSignals,
+      });
+      loadHistory();
+    } catch (err) {
+      // Show error but keep recording — one bad chunk shouldn't kill the session
+      document.getElementById("error-text").textContent = `Chunk ${n}: ${err.message}`;
+      switchView("error"); switchTab("analyze"); openPanel();
+    }
+
+    if (contActive) {
+      micBtn.classList.replace("processing", "recording");
+      setFulcrum("listening");
+      setStatus(`Chunk ${n} done — listening (click mic to stop)`);
+    }
+  };
+
+  contRecorder.onstop = () => {
+    contStream.getTracks().forEach(t => t.stop());
+    contStream   = null;
+    contRecorder = null;
+    contActive   = false;
     micBtn.classList.remove("recording", "processing");
-  }
-});
+    setFulcrum("idle");
+    setStatus("");
+  };
+
+  // Fire ondataavailable every CHUNK_MS while still recording
+  contRecorder.start(CHUNK_MS);
+}
+
+function stopContinuous() {
+  contActive = false;
+  setStatus("Stopping…");
+  if (contRecorder && contRecorder.state === "recording") contRecorder.stop();
+}
 
 // ── Render analysis result ────────────────────────────────────────────────────
 function badgeCls(level) {
